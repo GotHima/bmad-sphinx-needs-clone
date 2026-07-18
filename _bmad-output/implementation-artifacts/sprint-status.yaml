@@ -1,0 +1,76 @@
+# generated: 2026-07-18
+# last_updated: 2026-07-18
+# project: bmad-demo
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; sprint-status surfaces open ones
+
+generated: 2026-07-18
+last_updated: 2026-07-18
+project: bmad-demo
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Project Foundation & App Shell
+  epic-1: backlog
+  1-1-initialize-next-js-project-scaffold-with-brand-theme: backlog
+  1-2-initialize-sqlite-database-layer: backlog
+  1-3-app-shell-layout: backlog
+  epic-1-retrospective: optional
+  # Epic 2: Need Type & Status Configuration
+  epic-2: backlog
+  2-1-need-types-management-in-settings: backlog
+  2-2-status-values-management-in-settings: backlog
+  epic-2-retrospective: optional
+  # Epic 3: Need Creation, Editing & Table View
+  epic-3: backlog
+  3-1-needs-table-with-sortable-columns: backlog
+  3-2-create-need-via-side-sheet: backlog
+  3-3-edit-and-delete-needs: backlog
+  epic-3-retrospective: optional
+  # Epic 4: Need Links & Backlinks
+  epic-4: backlog
+  4-1-link-needs-together-and-show-link-counts-in-table: backlog
+  4-2-display-backlinks-on-need-detail: backlog
+  epic-4-retrospective: optional
+  # Epic 5: Table Filtering & Search
+  epic-5: backlog
+  5-1-filter-bar-with-url-state-and-server-side-filtered-query: backlog
+  epic-5-retrospective: optional
