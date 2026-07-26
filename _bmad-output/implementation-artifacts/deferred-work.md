@@ -6,3 +6,12 @@
 - **`better-sqlite3` absent from `package.json`** — Intentional per spec. Story 1.2 adds it along with `@types/better-sqlite3`.
 - **`searchParams` array coercion** (`page.tsx:9-10`) — `String(array)` produces comma-joined string. Placeholder page replaced entirely in Story 1.3.
 - **`Need.tags` null parsing** (`types/index.ts:7`) — `string | null` with no canonical null-safe utility. All call sites must guard; add a utility function in `lib/utils.ts` when the first consumer is written.
+
+## Deferred from: code review of 1-2-initialize-sqlite-database-layer (2026-07-25)
+
+- **`need.status` not FK'd to `status_value`** (`lib/db.ts:41`) — Architecture design choice: status stored by value string, not by FK to `status_value.id`. Stale status strings possible if status values are deleted. Enforce at application layer in future stories (e.g., Story 2.2 deleteStatus guard, Story 3 createNeed/updateNeed validation).
+- **No WAL mode / busy_timeout pragmas** (`lib/db.ts:23`) — `db.pragma('journal_mode = WAL')` and `db.pragma('busy_timeout = 5000')` would harden against SQLITE_BUSY during HMR or parallel builds. Not required by spec (local single-user tool, NFR-3).
+- **No error handling on `mkdirSync` + partial DB init** (`lib/db.ts:9,21`) — Permissions errors produce raw Node.js stack traces. Unclosed DB handle on `db.exec()` throw. Acceptable for local dev tool; add user-friendly diagnostics if containerized or CI use is added.
+- **DDL not in explicit transaction** (`lib/db.ts:27`) — `db.exec()` runs each `CREATE TABLE` as individual auto-commits. Partial schema on crash is self-healing via `CREATE TABLE IF NOT EXISTS` on next startup (AD-8).
+- **No index on `need_link.to_id`** (`lib/db.ts:52`) — Backlink query `SELECT from_id FROM need_link WHERE to_id = ?` is a full table scan. Add `CREATE INDEX IF NOT EXISTS idx_need_link_to_id ON need_link(to_id)` when row count warrants it (NFR-2: ≤500 rows in MVP).
+- **`created_at`/`updated_at` have no DEFAULT values** (`lib/db.ts:47-48`) — Server Actions must always supply both values. Add `DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))` on `created_at` and a trigger on `updated_at` as a convenience enhancement.
