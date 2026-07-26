@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18
-last_updated: 2026-07-25
+last_updated: 2026-07-26
 project: bmad-demo
 project_key: NOKEY
 tracking_system: file-system
@@ -52,7 +52,7 @@ development_status:
   epic-1: in-progress
   1-1-initialize-next-js-project-scaffold-with-brand-theme: done
   1-2-initialize-sqlite-database-layer: done
-  1-3-app-shell-layout: backlog
+  1-3-app-shell-layout: done
   epic-1-retrospective: optional
   # Epic 2: Need Type & Status Configuration
   epic-2: backlog
