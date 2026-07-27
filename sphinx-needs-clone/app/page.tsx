@@ -1,4 +1,8 @@
 import { SEARCH_PARAM_KEYS } from '@/types'
+import { listNeeds } from '@/lib/queries/needs'
+import { NeedsTable } from '@/components/needs/NeedsTable'
+
+export const dynamic = 'force-dynamic'
 
 interface HomePageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -6,10 +10,16 @@ interface HomePageProps {
 
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams
-  void params
-  void SEARCH_PARAM_KEYS // preserved for Story 3.1 — do not remove
+  const rawSort = params[SEARCH_PARAM_KEYS.SORT]
+  const rawDir = params[SEARCH_PARAM_KEYS.DIR]
+  const sort = Array.isArray(rawSort) ? rawSort[0] : rawSort
+  const dir = Array.isArray(rawDir) ? rawDir[0] : rawDir
+
+  const needs = listNeeds({ sort, dir })
 
   return (
-    <main className="flex flex-1 flex-col" />
+    <main className="flex flex-1 flex-col min-h-0">
+      <NeedsTable initialNeeds={needs} />
+    </main>
   )
 }

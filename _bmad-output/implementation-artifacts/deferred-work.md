@@ -31,3 +31,7 @@
 
 - **Race condition: concurrent save + row click closes wrong edit session** (`components/settings/NeedTypeTable.tsx:73-92`) — If a user clicks Save on row A then immediately clicks row B before the server action returns, `handleSaveEdit` calls `setEditingId(null)` which closes B's edit mode. Local SQLite operations are sub-millisecond so this is practically unreachable; `isPending` flag partially mitigates by disabling Save. Fix in a future polish story by capturing `editingId` into a `useRef` or using `startTransition`.
 - **AlertDialog confirm button has no disabled/loading state during async delete** (`components/settings/NeedTypeTable.tsx:309-314`) — `handleDelete` sets `isPending` but this flag is not wired to the AlertDialog confirm button. Base UI closes the dialog on click making double-invocation impossible, so the functional risk is zero. Add a visual loading state (spinner or disabled confirm) in a future polish story.
+
+## Deferred from: code review of 3-1-needs-table-with-sortable-columns (2026-07-27)
+
+- **`loading.tsx` column structure duplicated from `NeedsTable`** (`sphinx-needs-clone/app/loading.tsx`) — Column names and skeleton cell widths are hardcoded in `loading.tsx` separately from `SORTABLE_COLS` in `NeedsTable.tsx`. Any future column addition/rename requires both files to be updated in sync. Fix in a future refactor story by extracting `SORTABLE_COLS` (with skeleton widths) to a shared non-client constants file (e.g. `lib/table-config.ts`) and importing in both.

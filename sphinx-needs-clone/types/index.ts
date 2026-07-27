@@ -64,6 +64,7 @@ export const SEARCH_PARAM_KEYS = {
   STATUS: 'status',
   TAG: 'tags',
   SORT: 'sort',
+  DIR: 'dir',
 } as const
 
 export type SearchParamKey = (typeof SEARCH_PARAM_KEYS)[keyof typeof SEARCH_PARAM_KEYS]
