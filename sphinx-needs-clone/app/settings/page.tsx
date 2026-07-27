@@ -1,7 +1,26 @@
+import { listNeedTypesWithCount } from '@/lib/queries/config'
+import { NeedTypeTable } from '@/components/settings/NeedTypeTable'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+export const dynamic = 'force-dynamic'
+
 export default function SettingsPage() {
+  const types = listNeedTypesWithCount()
   return (
-    <main className="flex flex-1 flex-col">
-      <p className="text-muted-foreground p-6">Settings coming soon.</p>
+    <main className="flex flex-1 flex-col p-6">
+      <h1 className="text-xl font-semibold mb-6">Settings</h1>
+      <Tabs defaultValue="need-types">
+        <TabsList>
+          <TabsTrigger value="need-types">Need Types</TabsTrigger>
+          <TabsTrigger value="status-values">Status Values</TabsTrigger>
+        </TabsList>
+        <TabsContent value="need-types" className="mt-4">
+          <NeedTypeTable initialTypes={types} />
+        </TabsContent>
+        <TabsContent value="status-values" className="mt-4">
+          <p className="text-sm text-muted-foreground">Status values management — Story 2.2</p>
+        </TabsContent>
+      </Tabs>
     </main>
   )
 }
