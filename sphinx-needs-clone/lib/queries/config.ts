@@ -1,12 +1,18 @@
 import 'server-only'
 
 import db from '@/lib/db'
-import type { NeedType } from '@/types'
+import type { NeedType, StatusValue } from '@/types'
 
 export function listNeedTypes(): NeedType[] {
   return db
     .prepare(`SELECT id, name, prefix, color FROM need_type ORDER BY name ASC`)
     .all() as NeedType[]
+}
+
+export function listStatuses(): StatusValue[] {
+  return db
+    .prepare(`SELECT id, value FROM status_value ORDER BY value ASC`)
+    .all() as StatusValue[]
 }
 
 export function listNeedTypesWithCount(): (NeedType & { needs_count: number })[] {

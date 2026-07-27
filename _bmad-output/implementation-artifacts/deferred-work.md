@@ -23,6 +23,10 @@
 - **Disabled "New Need" button lacks accessible explanation** (`components/layout/AppTopBar.tsx:11`) — `<Button disabled>` has no tooltip or `title` indicating why it is disabled. Story 3.2 wires the button; add an `aria-describedby` or `title="Create a new need"` at that point.
 - **Settings `<Link>` has no `aria-current="page"` active state** (`components/layout/AppTopBar.tsx:14`) — No active/current-page indicator when user is on `/settings`. Requires `usePathname()` (client hook), making `AppTopBar` a client component or requiring an `<ActiveSettingsLink>` sub-component. Implement in a future nav-enhancement story.
 
+## Deferred from: code review of 2-2-status-values-management-in-settings (2026-07-27)
+
+- **Race condition in `deleteStatus`: concurrent deletes both pass guard checks** (`lib/actions/statuses.ts:27-50`) — Three separate queries (SELECT value, SELECT COUNT, DELETE) run outside a transaction. Two concurrent invocations could both pass the `open` + in-use guards and the second DELETE runs on an already-deleted row, returning a false success. Single-user local SQLite tool; practically unreachable. Harden if multi-user or concurrent access is added.
+
 ## Deferred from: code review of 2-1-need-types-management-in-settings (2026-07-27)
 
 - **Race condition: concurrent save + row click closes wrong edit session** (`components/settings/NeedTypeTable.tsx:73-92`) — If a user clicks Save on row A then immediately clicks row B before the server action returns, `handleSaveEdit` calls `setEditingId(null)` which closes B's edit mode. Local SQLite operations are sub-millisecond so this is practically unreachable; `isPending` flag partially mitigates by disabling Save. Fix in a future polish story by capturing `editingId` into a `useRef` or using `startTransition`.
