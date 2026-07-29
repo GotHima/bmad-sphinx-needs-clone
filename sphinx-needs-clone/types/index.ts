@@ -45,6 +45,7 @@ export interface CreateNeedInput {
 }
 
 export interface UpdateNeedInput {
+  type_id?: number
   title?: string
   status?: string
   tags?: string

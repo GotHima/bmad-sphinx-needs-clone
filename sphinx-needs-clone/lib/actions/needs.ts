@@ -4,7 +4,7 @@ import 'server-only'
 
 import { revalidatePath } from 'next/cache'
 import db from '@/lib/db'
-import type { ActionResult, CreateNeedInput, Need } from '@/types'
+import type { ActionResult, CreateNeedInput, UpdateNeedInput, Need } from '@/types'
 
 export async function suggestNeedId(typeId: number): Promise<ActionResult<string>> {
   const type = db
@@ -82,5 +82,57 @@ export async function createNeed(input: CreateNeedInput): Promise<ActionResult<N
       return { success: false, error: 'ID already in use', field: 'id' }
     }
     return { success: false, error: 'Failed to create need' }
+  }
+}
+
+export async function updateNeed(id: string, input: UpdateNeedInput): Promise<ActionResult<Need>> {
+  const title = (input.title ?? '').trim()
+  if (!title) return { success: false, error: 'Title is required', field: 'title' }
+
+  if (input.status !== undefined) {
+    const validStatus = db
+      .prepare('SELECT COUNT(*) AS count FROM status_value WHERE value = ?')
+      .get(input.status) as { count: number }
+    if (validStatus.count === 0) {
+      return { success: false, error: 'Invalid status', field: 'status' }
+    }
+  }
+
+  const now = new Date().toISOString()
+  const row = db
+    .prepare(`
+      UPDATE need
+      SET type_id = COALESCE(?, type_id), title = ?, status = COALESCE(?, status),
+          tags = ?, description = ?, updated_at = ?
+      WHERE id = ?
+      RETURNING id, type_id, title, status, tags, description, seq, created_at, updated_at
+    `)
+    .get(
+      input.type_id ?? null,
+      title,
+      input.status ?? null,
+      input.tags?.trim() || null,
+      input.description?.trim() || null,
+      now,
+      id
+    ) as Need | undefined
+
+  if (!row) return { success: false, error: 'Need not found' }
+  revalidatePath('/')
+  return { success: true, data: row }
+}
+
+export async function deleteNeed(id: string): Promise<ActionResult<void>> {
+  const deleteTransaction = db.transaction((needId: string) => {
+    db.prepare('DELETE FROM need_link WHERE from_id = ? OR to_id = ?').run(needId, needId)
+    db.prepare('DELETE FROM need WHERE id = ?').run(needId)
+  })
+
+  try {
+    deleteTransaction(id)
+    revalidatePath('/')
+    return { success: true, data: undefined }
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Failed to delete need' }
   }
 }

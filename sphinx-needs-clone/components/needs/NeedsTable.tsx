@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Trash2 } from 'lucide-react'
 import { SEARCH_PARAM_KEYS } from '@/types'
 import type { NeedType, StatusValue } from '@/types'
 import type { NeedRow } from '@/lib/queries/needs'
@@ -10,8 +10,20 @@ import { NeedTypeBadge } from '@/components/needs/NeedTypeBadge'
 import { StatusBadge } from '@/components/needs/StatusBadge'
 import { IdChip } from '@/components/needs/IdChip'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { parseTags } from '@/lib/utils'
 import { NeedSheet } from '@/components/needs/NeedSheet'
+import { deleteNeed } from '@/lib/actions/needs'
+import { toast } from 'sonner'
 
 interface NeedsTableProps {
   initialNeeds: NeedRow[]
@@ -47,8 +59,13 @@ export function NeedsTable({ initialNeeds, types, statuses }: NeedsTableProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
+  const [, startTransition] = useTransition()
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [selectedNeed, setSelectedNeed] = useState<NeedRow | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<NeedRow | null>(null)
+  const [rowDeleteConfirmOpen, setRowDeleteConfirmOpen] = useState(false)
   const sheetOpenRef = useRef(sheetOpen)
+  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([])
   useEffect(() => { sheetOpenRef.current = sheetOpen }, [sheetOpen])
 
   const currentSort = searchParams.get(SEARCH_PARAM_KEYS.SORT) ?? 'created_at'
@@ -115,18 +132,24 @@ export function NeedsTable({ initialNeeds, types, statuses }: NeedsTableProps) {
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">
                   Links
                 </th>
+                <th className="px-3 py-2 w-8" />
               </tr>
             </thead>
             <tbody>
-              {initialNeeds.map(need => {
+              {initialNeeds.map((need, index) => {
                 const tags = parseTags(need.tags)
                 return (
                   <tr
                     key={need.id}
-                    className="border-b border-border cursor-pointer hover:bg-muted/50 transition-colors"
+                    ref={(el) => { rowRefs.current[index] = el }}
+                    className="group border-b border-border cursor-pointer hover:bg-muted/50 transition-colors"
                     tabIndex={0}
-                    onClick={() => { /* TODO Story 3.3: open NeedSheet in edit mode for this need */ }}
-                    onKeyDown={e => { if (e.key === 'Enter') { /* TODO Story 3.3: open NeedSheet in edit mode for this need */ } }}
+                    onClick={() => { setSelectedNeed(need); setSheetOpen(true) }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { setSelectedNeed(need); setSheetOpen(true) }
+                      if (e.key === 'ArrowUp') { e.preventDefault(); rowRefs.current[index - 1]?.focus() }
+                      if (e.key === 'ArrowDown') { e.preventDefault(); rowRefs.current[index + 1]?.focus() }
+                    }}
                   >
                     <td className="px-3 py-2">
                       <IdChip id={need.id} />
@@ -144,6 +167,20 @@ export function NeedsTable({ initialNeeds, types, statuses }: NeedsTableProps) {
                       {tags.length > 0 ? tags.join(', ') : '—'}
                     </td>
                     <td className="px-3 py-2 text-muted-foreground">—</td>
+                    <td className="px-3 py-2 w-8">
+                      <button
+                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-destructive hover:text-destructive/80"
+                        aria-label={`Delete ${need.id}`}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDeleteTarget(need)
+                          setRowDeleteConfirmOpen(true)
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
@@ -153,10 +190,54 @@ export function NeedsTable({ initialNeeds, types, statuses }: NeedsTableProps) {
       )}
       <NeedSheet
         open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        onOpenChange={(open) => {
+          setSheetOpen(open)
+          if (!open) setSelectedNeed(null)
+        }}
+        mode={selectedNeed ? 'edit' : 'create'}
+        initialNeed={selectedNeed ?? undefined}
         types={types}
         statuses={statuses}
       />
+
+      <AlertDialog
+        open={rowDeleteConfirmOpen}
+        onOpenChange={(open) => {
+          setRowDeleteConfirmOpen(open)
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.id}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will also remove all links to it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (!deleteTarget) return
+                startTransition(async () => {
+                  const result = await deleteNeed(deleteTarget.id)
+                  if (result.success) {
+                    toast('Deleted.')
+                    router.refresh()
+                  } else {
+                    toast.error(result.error ?? "Couldn't delete. Try again.")
+                  }
+                  setRowDeleteConfirmOpen(false)
+                  setDeleteTarget(null)
+                })
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
