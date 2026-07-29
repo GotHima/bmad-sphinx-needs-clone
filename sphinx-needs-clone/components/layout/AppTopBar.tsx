@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { buttonVariants, Button } from '@/components/ui/button'
+import { NewNeedButton } from '@/components/layout/NewNeedButton'
 
 export function AppTopBar() {
   return (
@@ -8,9 +10,9 @@ export function AppTopBar() {
         Sphinx Needs Clone
       </Link>
       <div className="flex items-center gap-2">
-        <Button variant="default" size="sm" disabled>
-          New Need
-        </Button>
+        <Suspense fallback={<Button variant="default" size="sm" disabled>New Need</Button>}>
+          <NewNeedButton />
+        </Suspense>
         <Link href="/settings" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
           Settings
         </Link>

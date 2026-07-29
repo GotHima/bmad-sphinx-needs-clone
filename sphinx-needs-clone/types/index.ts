@@ -36,6 +36,7 @@ export interface NeedLink {
 // ─── Input / mutation types ─────────────────────────────────────────────────
 
 export interface CreateNeedInput {
+  id: string
   type_id: number
   title: string
   status: string
