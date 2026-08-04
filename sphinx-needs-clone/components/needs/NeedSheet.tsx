@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { suggestNeedId, createNeed, updateNeed, deleteNeed, getLinksForNeed } from '@/lib/actions/needs'
+import { suggestNeedId, createNeed, updateNeed, deleteNeed, getLinksForNeed, getBacklinksForNeed } from '@/lib/actions/needs'
 import type { Need, NeedType, StatusValue } from '@/types'
 import { IdChip } from '@/components/needs/IdChip'
 import { NeedTypeBadge } from '@/components/needs/NeedTypeBadge'
@@ -78,6 +78,7 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
   const suggestRequestRef = useRef(0)
   const linksRequestRef = useRef(0)
   const initialLinksRef = useRef<string[]>([])
+  const [backlinks, setBacklinks] = useState<string[] | null>(null)
   const deleteConfirmOpenRef = useRef(deleteConfirmOpen)
   useEffect(() => { deleteConfirmOpenRef.current = deleteConfirmOpen }, [deleteConfirmOpen])
 
@@ -103,6 +104,7 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
     setIdError(null)
     if (mode === 'edit' && initialNeed) {
       initialLinksRef.current = []
+      setBacklinks(null)
       setFormState({
         type_id: initialNeed.type_id,
         id: initialNeed.id,
@@ -114,15 +116,24 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
       })
       const token = ++linksRequestRef.current
       startTransition(async () => {
-        const result = await getLinksForNeed(initialNeed.id)
-        if (result.success && token === linksRequestRef.current) {
-          initialLinksRef.current = result.data
-          setFormState(prev => ({ ...prev, links: result.data }))
+        const [linksResult, backlinksResult] = await Promise.all([
+          getLinksForNeed(initialNeed.id),
+          getBacklinksForNeed(initialNeed.id),
+        ])
+        if (token === linksRequestRef.current) {
+          if (linksResult.success) {
+            initialLinksRef.current = linksResult.data
+            setFormState(prev => ({ ...prev, links: linksResult.data }))
+          }
+          if (backlinksResult.success) {
+            setBacklinks(backlinksResult.data)
+          }
         }
       })
       return
     }
     initialLinksRef.current = []
+    setBacklinks(null)
     const fresh = defaultForm(types)
     setFormState(fresh)
     if (fresh.type_id) {
@@ -364,6 +375,26 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
                 excludeId={mode === 'edit' ? initialNeed?.id : undefined}
               />
             </div>
+
+            {mode === 'edit' && backlinks !== null && (
+              <div className="flex flex-col gap-1.5">
+                <Label>← Linked by</Label>
+                {backlinks.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {backlinks.map(id => (
+                      <span
+                        key={id}
+                        className="inline-flex items-center rounded-sm bg-muted px-1.5 py-0.5 text-xs"
+                      >
+                        <IdChip id={id} />
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No backlinks.</p>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="need-description">Description</Label>

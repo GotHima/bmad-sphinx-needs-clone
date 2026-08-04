@@ -17,6 +17,17 @@ export async function getLinksForNeed(id: string): Promise<ActionResult<string[]
   }
 }
 
+export async function getBacklinksForNeed(id: string): Promise<ActionResult<string[]>> {
+  try {
+    const rows = db
+      .prepare('SELECT from_id FROM need_link WHERE to_id = ?')
+      .all(id) as { from_id: string }[]
+    return { success: true, data: rows.map(r => r.from_id) }
+  } catch {
+    return { success: false, error: 'Failed to load backlinks' }
+  }
+}
+
 export async function suggestNeedId(typeId: number): Promise<ActionResult<string>> {
   const type = db
     .prepare('SELECT prefix FROM need_type WHERE id = ?')
