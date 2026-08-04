@@ -35,6 +35,12 @@ export interface NeedLink {
 
 // ─── Input / mutation types ─────────────────────────────────────────────────
 
+export interface NeedSearchResult {
+  id: string
+  title: string
+  type: string
+}
+
 export interface CreateNeedInput {
   id: string
   type_id: number
@@ -42,6 +48,7 @@ export interface CreateNeedInput {
   status: string
   tags?: string
   description?: string
+  links?: string[]
 }
 
 export interface UpdateNeedInput {
@@ -50,6 +57,7 @@ export interface UpdateNeedInput {
   status?: string
   tags?: string
   description?: string
+  links?: string[]
 }
 
 // ─── Server Action results ───────────────────────────────────────────────────

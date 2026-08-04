@@ -15,12 +15,12 @@ function getListStmt(orderByExpr: string, dir: 'asc' | 'desc') {
   if (!stmtCache.has(key)) {
     stmtCache.set(key, db.prepare(`
       SELECT
-        n.id, n.type_id, n.title, n.status, n.tags, n.seq,
+        n.id, n.type_id, n.title, n.status, n.tags, n.description, n.seq,
         n.created_at, n.updated_at,
         nt.name   AS type_name,
         nt.prefix AS type_prefix,
         nt.color  AS type_color,
-        0         AS link_count
+        (SELECT COUNT(*) FROM need_link nl WHERE nl.from_id = n.id) AS link_count
       FROM need n
       JOIN need_type nt ON nt.id = n.type_id
       ORDER BY ${orderByExpr} ${dir}

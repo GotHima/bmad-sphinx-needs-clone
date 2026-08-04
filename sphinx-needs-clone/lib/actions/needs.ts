@@ -6,6 +6,17 @@ import { revalidatePath } from 'next/cache'
 import db from '@/lib/db'
 import type { ActionResult, CreateNeedInput, UpdateNeedInput, Need } from '@/types'
 
+export async function getLinksForNeed(id: string): Promise<ActionResult<string[]>> {
+  try {
+    const rows = db
+      .prepare('SELECT to_id FROM need_link WHERE from_id = ?')
+      .all(id) as { to_id: string }[]
+    return { success: true, data: rows.map(r => r.to_id) }
+  } catch {
+    return { success: false, error: 'Failed to load links' }
+  }
+}
+
 export async function suggestNeedId(typeId: number): Promise<ActionResult<string>> {
   const type = db
     .prepare('SELECT prefix FROM need_type WHERE id = ?')
@@ -54,7 +65,7 @@ export async function createNeed(input: CreateNeedInput): Promise<ActionResult<N
     const seq = (extractedSeq !== null && extractedSeq > 0) ? extractedSeq : (maxRow.max ?? 0) + 1
 
     const now = new Date().toISOString()
-    return db
+    const insertedNeed = db
       .prepare(
         `INSERT INTO need (id, type_id, title, status, tags, description, seq, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -71,6 +82,15 @@ export async function createNeed(input: CreateNeedInput): Promise<ActionResult<N
         now,
         now
       ) as Need
+
+    if (input.links && input.links.length > 0) {
+      const insertLink = db.prepare('INSERT INTO need_link (from_id, to_id) VALUES (?, ?)')
+      for (const toId of input.links) {
+        insertLink.run(insertedNeed.id, toId)
+      }
+    }
+
+    return insertedNeed
   })
 
   try {
@@ -99,27 +119,45 @@ export async function updateNeed(id: string, input: UpdateNeedInput): Promise<Ac
   }
 
   const now = new Date().toISOString()
-  const row = db
-    .prepare(`
-      UPDATE need
-      SET type_id = COALESCE(?, type_id), title = ?, status = COALESCE(?, status),
-          tags = ?, description = ?, updated_at = ?
-      WHERE id = ?
-      RETURNING id, type_id, title, status, tags, description, seq, created_at, updated_at
-    `)
-    .get(
-      input.type_id ?? null,
-      title,
-      input.status ?? null,
-      input.tags?.trim() || null,
-      input.description?.trim() || null,
-      now,
-      id
-    ) as Need | undefined
+  const updateTransaction = db.transaction(() => {
+    const row = db
+      .prepare(`
+        UPDATE need
+        SET type_id = COALESCE(?, type_id), title = ?, status = COALESCE(?, status),
+            tags = ?, description = ?, updated_at = ?
+        WHERE id = ?
+        RETURNING id, type_id, title, status, tags, description, seq, created_at, updated_at
+      `)
+      .get(
+        input.type_id ?? null,
+        title,
+        input.status ?? null,
+        input.tags?.trim() || null,
+        input.description?.trim() || null,
+        now,
+        id
+      ) as Need | undefined
+    if (!row) throw new Error('Need not found')
+    if (input.links !== undefined) {
+      db.prepare('DELETE FROM need_link WHERE from_id = ?').run(id)
+      const insertLink = db.prepare('INSERT INTO need_link (from_id, to_id) VALUES (?, ?)')
+      for (const toId of input.links) {
+        insertLink.run(id, toId)
+      }
+    }
+    return row
+  })
 
-  if (!row) return { success: false, error: 'Need not found' }
-  revalidatePath('/')
-  return { success: true, data: row }
+  try {
+    const row = updateTransaction()
+    revalidatePath('/')
+    return { success: true, data: row }
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === 'Need not found') {
+      return { success: false, error: 'Need not found' }
+    }
+    return { success: false, error: 'Failed to update need' }
+  }
 }
 
 export async function deleteNeed(id: string): Promise<ActionResult<void>> {

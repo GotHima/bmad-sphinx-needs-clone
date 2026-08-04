@@ -166,7 +166,7 @@ export function NeedsTable({ initialNeeds, types, statuses }: NeedsTableProps) {
                     <td className="px-3 py-2 text-muted-foreground">
                       {tags.length > 0 ? tags.join(', ') : '—'}
                     </td>
-                    <td className="px-3 py-2 text-muted-foreground">—</td>
+                    <td className="px-3 py-2 text-muted-foreground">{need.link_count > 0 ? need.link_count : '—'}</td>
                     <td className="px-3 py-2 w-8">
                       <button
                         className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-destructive hover:text-destructive/80"

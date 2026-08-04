@@ -31,10 +31,11 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { suggestNeedId, createNeed, updateNeed, deleteNeed } from '@/lib/actions/needs'
+import { suggestNeedId, createNeed, updateNeed, deleteNeed, getLinksForNeed } from '@/lib/actions/needs'
 import type { Need, NeedType, StatusValue } from '@/types'
 import { IdChip } from '@/components/needs/IdChip'
 import { NeedTypeBadge } from '@/components/needs/NeedTypeBadge'
+import { LinksInput } from '@/components/needs/LinksInput'
 
 interface NeedSheetProps {
   open: boolean
@@ -52,6 +53,7 @@ interface FormState {
   status: string
   tags: string
   description: string
+  links: string[]
 }
 
 function defaultForm(types: NeedType[]): FormState {
@@ -62,6 +64,7 @@ function defaultForm(types: NeedType[]): FormState {
     status: 'open',
     tags: '',
     description: '',
+    links: [],
   }
 }
 
@@ -73,19 +76,25 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
   const [discardOpen, setDiscardOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const suggestRequestRef = useRef(0)
+  const linksRequestRef = useRef(0)
+  const initialLinksRef = useRef<string[]>([])
   const deleteConfirmOpenRef = useRef(deleteConfirmOpen)
   useEffect(() => { deleteConfirmOpenRef.current = deleteConfirmOpen }, [deleteConfirmOpen])
 
+  const linksChanged = JSON.stringify([...formState.links].sort()) !==
+    JSON.stringify([...initialLinksRef.current].sort())
   const isDirty = mode === 'edit' && initialNeed
     ? formState.type_id !== initialNeed.type_id ||
       formState.title !== initialNeed.title ||
       formState.status !== initialNeed.status ||
       formState.tags !== (initialNeed.tags ?? '') ||
-      formState.description !== (initialNeed.description ?? '')
+      formState.description !== (initialNeed.description ?? '') ||
+      linksChanged
     : formState.title !== '' ||
       formState.tags !== '' ||
       formState.description !== '' ||
-      formState.status !== 'open'
+      formState.status !== 'open' ||
+      formState.links.length > 0
 
   useEffect(() => {
     if (!open) return
@@ -93,6 +102,7 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
     setDeleteConfirmOpen(false)
     setIdError(null)
     if (mode === 'edit' && initialNeed) {
+      initialLinksRef.current = []
       setFormState({
         type_id: initialNeed.type_id,
         id: initialNeed.id,
@@ -100,9 +110,19 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
         status: initialNeed.status,
         tags: initialNeed.tags ?? '',
         description: initialNeed.description ?? '',
+        links: [],
+      })
+      const token = ++linksRequestRef.current
+      startTransition(async () => {
+        const result = await getLinksForNeed(initialNeed.id)
+        if (result.success && token === linksRequestRef.current) {
+          initialLinksRef.current = result.data
+          setFormState(prev => ({ ...prev, links: result.data }))
+        }
       })
       return
     }
+    initialLinksRef.current = []
     const fresh = defaultForm(types)
     setFormState(fresh)
     if (fresh.type_id) {
@@ -155,6 +175,7 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
           status: formState.status,
           tags: formState.tags || undefined,
           description: formState.description || undefined,
+          links: formState.links,
         })
       } else {
         result = await createNeed({
@@ -164,6 +185,7 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
           status: formState.status,
           tags: formState.tags || undefined,
           description: formState.description || undefined,
+          links: formState.links,
         })
       }
       if (!result.success) {
@@ -331,6 +353,15 @@ export function NeedSheet({ open, onOpenChange, types, statuses, mode = 'create'
                 value={formState.tags}
                 onChange={e => setFormState(prev => ({ ...prev, tags: e.target.value }))}
                 placeholder="config, auth, mvp"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label>Links</Label>
+              <LinksInput
+                value={formState.links}
+                onChange={(links) => setFormState(prev => ({ ...prev, links }))}
+                excludeId={mode === 'edit' ? initialNeed?.id : undefined}
               />
             </div>
 

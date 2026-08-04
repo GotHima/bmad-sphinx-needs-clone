@@ -41,7 +41,7 @@
 # - Retrospective appends its action items to action_items; sprint-status surfaces open ones
 
 generated: 2026-07-18
-last_updated: 2026-07-29T23:55:00+08:00
+last_updated: 2026-08-04T14:43:00+08:00
 project: bmad-demo
 project_key: NOKEY
 tracking_system: file-system
@@ -66,8 +66,8 @@ development_status:
   3-3-edit-and-delete-needs: done
   epic-3-retrospective: optional
   # Epic 4: Need Links & Backlinks
-  epic-4: backlog
-  4-1-link-needs-together-and-show-link-counts-in-table: backlog
+  epic-4: in-progress
+  4-1-link-needs-together-and-show-link-counts-in-table: done
   4-2-display-backlinks-on-need-detail: backlog
   epic-4-retrospective: optional
   # Epic 5: Table Filtering & Search
