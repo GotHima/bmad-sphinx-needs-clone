@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { parseTags } from '@/lib/utils'
+import { FilterBar } from '@/components/needs/FilterBar'
 import { NeedSheet } from '@/components/needs/NeedSheet'
 import { deleteNeed } from '@/lib/actions/needs'
 import { toast } from 'sonner'
@@ -104,15 +105,39 @@ export function NeedsTable({ initialNeeds, types, statuses }: NeedsTableProps) {
     router.push(`${pathname}?${params.toString()}`)
   }
 
+  const hasActiveFilters = !!(searchParams.get(SEARCH_PARAM_KEYS.TYPE) || searchParams.get(SEARCH_PARAM_KEYS.STATUS) || searchParams.get(SEARCH_PARAM_KEYS.TAG) || searchParams.get(SEARCH_PARAM_KEYS.QUERY))
+
   return (
     <>
+      <FilterBar types={types} statuses={statuses} />
       {initialNeeds.length === 0 ? (
-        <div className="flex flex-col items-center justify-center flex-1 gap-3 py-16 text-muted-foreground">
-          <p className="text-sm">No needs yet.</p>
-          <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)}>
-            New Need
-          </Button>
-        </div>
+        hasActiveFilters ? (
+          <div className="flex flex-col items-center justify-center flex-1 gap-2 py-16 text-muted-foreground">
+            <p className="text-sm">No results. Try adjusting the filters.</p>
+            <button
+              type="button"
+              className="text-xs underline underline-offset-2 hover:text-foreground transition-colors"
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString())
+                params.delete(SEARCH_PARAM_KEYS.TYPE)
+                params.delete(SEARCH_PARAM_KEYS.STATUS)
+                params.delete(SEARCH_PARAM_KEYS.TAG)
+                params.delete(SEARCH_PARAM_KEYS.QUERY)
+                const qs = params.toString()
+                router.push(qs ? `${pathname}?${qs}` : pathname)
+              }}
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center flex-1 gap-3 py-16 text-muted-foreground">
+            <p className="text-sm">No needs yet.</p>
+            <Button variant="outline" size="sm" onClick={() => setSheetOpen(true)}>
+              New Need
+            </Button>
+          </div>
+        )
       ) : (
         <div className="overflow-auto flex-1">
           <table className="w-full text-sm border-collapse">

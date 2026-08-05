@@ -9,6 +9,11 @@ interface HomePageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
+function parseComma(v?: string | string[]): string[] {
+  const s = Array.isArray(v) ? v[0] : v
+  return s ? s.split(',').map(t => t.trim()).filter(Boolean) : []
+}
+
 export default async function HomePage({ searchParams }: HomePageProps) {
   const params = await searchParams
   const rawSort = params[SEARCH_PARAM_KEYS.SORT]
@@ -16,7 +21,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const sort = Array.isArray(rawSort) ? rawSort[0] : rawSort
   const dir = Array.isArray(rawDir) ? rawDir[0] : rawDir
 
-  const needs = listNeeds({ sort, dir })
+  const type = parseComma(params[SEARCH_PARAM_KEYS.TYPE])
+  const status = parseComma(params[SEARCH_PARAM_KEYS.STATUS])
+  const tags = parseComma(params[SEARCH_PARAM_KEYS.TAG])
+  const rawQ = params[SEARCH_PARAM_KEYS.QUERY]
+  const q = Array.isArray(rawQ) ? rawQ[0] : rawQ
+
+  const needs = listNeeds({ sort, dir, type, status, tags, q })
   const types = listNeedTypes()
   const statuses = listStatuses()
 
